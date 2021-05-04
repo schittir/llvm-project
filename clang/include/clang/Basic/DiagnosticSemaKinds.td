@@ -6331,6 +6331,10 @@ def warn_pointer_arith_null_ptr : Warning<
 def warn_gnu_null_ptr_arith : Warning<
   "arithmetic on a null pointer treated as a cast from integer to pointer is a GNU extension">,
   InGroup<NullPointerArithmetic>, DefaultIgnore;
+def err_unique_stable_name_already_evaluated
+    : Error<"__builtin_unique_stable_name evaluated before the last kernel was "
+            "instantiated">;
+def note_kernel_instantiated_here : Note<"kernel instantiated here">;
 
 def warn_floatingpoint_eq : Warning<
   "comparing floating point with == or != is unsafe">,
