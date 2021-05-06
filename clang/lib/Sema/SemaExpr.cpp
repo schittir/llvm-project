@@ -3497,11 +3497,6 @@ ExprResult Sema::BuildUniqueStableNameExpr(SourceLocation OpLoc,
                                            SourceLocation LParen,
                                            SourceLocation RParen,
                                            TypeSourceInfo *TSI) {
-  //if (RequireCompleteSizedType(
-  //        OpLoc, TSI->getType(),
-  //        diag::err_sizeof_alignof_incomplete_or_sizeless_type,
-  //        "__builtin_unique_stable_name", SourceRange{LParen, RParen}))
-  //  return ExprError();
   return UniqueStableNameExpr::Create(Context, OpLoc, LParen, RParen, TSI);
 }
 ExprResult Sema::BuildUniqueStableNameExpr(SourceLocation OpLoc,
