@@ -562,12 +562,15 @@ static void instantiateDependentSYCLKernelAttr(
 
   // Evaluate whether this would change any of the already evaluated
   // __builtin_unique_stable_name values.
-  for (const auto Itr : S.Context.UniqueStableNameEvaluatedValues) {
-    if (Itr.second != Itr.first->ComputeName(S.Context)) {
+  for (auto &Itr : S.Context.UniqueStableNameEvaluatedValues) {
+    const std::string &CurName = Itr.first->ComputeName(S.Context);
+    if (Itr.second != CurName) {
       S.Diag(New->getLocation(),
              diag::err_kernel_invalidates_unique_stable_name);
       S.Diag(Itr.first->getLocation(),
              diag::note_unique_stable_name_evaluated_here);
+      // Update this so future diagnostics work correctly.
+      Itr.second = CurName;
       return;
     }
   }
