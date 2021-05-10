@@ -6308,8 +6308,8 @@ void ItaniumMangleContextImpl::mangleLambdaSig(const CXXRecordDecl *Lambda,
 ItaniumMangleContext *ItaniumMangleContext::create(ASTContext &Context,
                                                    DiagnosticsEngine &Diags) {
   return new ItaniumMangleContextImpl(
-      Context, Diags, [](ASTContext &, const TagDecl *) { return false; },
-      [](ASTContext &, const TagDecl *, raw_ostream &) {});
+      Context, Diags, [](ASTContext &, const CXXRecordDecl *) { return false; },
+      [](ASTContext &, const CXXRecordDecl *, raw_ostream &) {});
 }
 
 ItaniumMangleContext *ItaniumMangleContext::create(

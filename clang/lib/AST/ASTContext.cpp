@@ -11641,52 +11641,52 @@ StringRef ASTContext::getCUIDHash() const {
 
 // Get the closest named parent, so we can order the sycl naming decls somewhere
 // that mangling is meaningful.
-static const DeclContext *GetNamedParent(const TagDecl *TD) {
-  const DeclContext *DC = TD->getDeclContext();
+static const DeclContext *GetNamedParent(const CXXRecordDecl *RD) {
+  const DeclContext *DC = RD->getDeclContext();
 
   while (!isa<NamedDecl, TranslationUnitDecl>(DC))
     DC = DC->getParent();
   return DC;
 }
 
-void ASTContext::AddSYCLKernelNamingDecl(const TagDecl *TD) {
-  TD = TD->getCanonicalDecl();
-  const DeclContext *DC = GetNamedParent(TD);
+void ASTContext::AddSYCLKernelNamingDecl(const CXXRecordDecl *RD) {
+  RD = RD->getCanonicalDecl();
+  const DeclContext *DC = GetNamedParent(RD);
 
-  assert(TD->getLocation().isValid() &&
+  assert(RD->getLocation().isValid() &&
          "Invalid location on kernel naming decl");
 
-  (void)SYCLKernelNamingTypes[DC].insert(TD);
+  (void)SYCLKernelNamingTypes[DC].insert(RD);
 }
 
-bool ASTContext::IsSYCLKernelNamingDecl(const TagDecl *TD) const {
-  TD = TD->getCanonicalDecl();
-  const DeclContext *DC = GetNamedParent(TD);
+bool ASTContext::IsSYCLKernelNamingDecl(const CXXRecordDecl *RD) const {
+  RD = RD->getCanonicalDecl();
+  const DeclContext *DC = GetNamedParent(RD);
 
   auto Itr = SYCLKernelNamingTypes.find(DC);
 
   if (Itr == SYCLKernelNamingTypes.end())
     return false;
 
-  return Itr->getSecond().count(TD);
+  return Itr->getSecond().count(RD);
 }
 
-unsigned ASTContext::GetSYCLKernelNamingIndex(const TagDecl *TD) const {
-  assert(IsSYCLKernelNamingDecl(TD) &&
+unsigned ASTContext::GetSYCLKernelNamingIndex(const CXXRecordDecl *RD) const {
+  assert(IsSYCLKernelNamingDecl(RD) &&
          "Lambda not involved in mangling asked for a naming index?");
 
-  TD = TD->getCanonicalDecl();
-  const DeclContext *DC = GetNamedParent(TD);
+  RD = RD->getCanonicalDecl();
+  const DeclContext *DC = GetNamedParent(RD);
 
   auto Itr = SYCLKernelNamingTypes.find(DC);
   assert(Itr != SYCLKernelNamingTypes.end() && "Not a valid DeclContext?");
 
-  const llvm::SmallPtrSet<const TagDecl *, 4> &Set = Itr->getSecond();
+  const llvm::SmallPtrSet<const CXXRecordDecl *, 4> &Set = Itr->getSecond();
 
-  llvm::SmallVector<const TagDecl *> TagDecls{Set.begin(), Set.end()};
-  llvm::sort(TagDecls, [](const TagDecl *LHS, const TagDecl *RHS) {
-    return LHS->getLocation() < RHS->getLocation();
+  llvm::SmallVector<const CXXRecordDecl *> Decls{Set.begin(), Set.end()};
+  llvm::sort(Decls, [](const CXXRecordDecl *LHS, const CXXRecordDecl *RHS) {
+    return LHS->getLambdaManglingNumber() < RHS->getLambdaManglingNumber();
   });
 
-  return llvm::find(TagDecls, TD) - TagDecls.begin();
+  return llvm::find(Decls, RD) - Decls.begin();
 }

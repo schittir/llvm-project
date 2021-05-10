@@ -571,12 +571,12 @@ std::string UniqueStableNameExpr::ComputeName(ASTContext &Context) const {
 
 std::string UniqueStableNameExpr::ComputeName(ASTContext &Context,
                                               QualType Ty) {
-  auto ShouldMangleCallback = [](ASTContext &Ctx, const TagDecl *TD) {
-    return Ctx.IsSYCLKernelNamingDecl(TD);
+  auto ShouldMangleCallback = [](ASTContext &Ctx, const CXXRecordDecl *RD) {
+    return Ctx.IsSYCLKernelNamingDecl(RD);
   };
-  auto MangleCallback = [](ASTContext &Ctx, const TagDecl *TD,
+  auto MangleCallback = [](ASTContext &Ctx, const CXXRecordDecl *RD,
                            raw_ostream &OS) {
-    assert(Ctx.IsSYCLKernelNamingDecl(TD) && "Not a sycl kernel?");
+    assert(Ctx.IsSYCLKernelNamingDecl(RD) && "Not a sycl kernel?");
     // This replaces the 'lambda number' in the mangling with a unique number
     // based on its order in the declaration.  To provide some level of visual
     // notability (actual uniqueness from normal lambdas isn't necessary, as
@@ -584,7 +584,7 @@ std::string UniqueStableNameExpr::ComputeName(ASTContext &Context,
     // For example:
     // _ZTSZ3foovEUlvE10005_
     // Demangles to: typeinfo name for foo()::'lambda10005'()
-    OS << (10'000 + Ctx.GetSYCLKernelNamingIndex(TD));
+    OS << (10'000 + Ctx.GetSYCLKernelNamingIndex(RD));
   };
   std::unique_ptr<MangleContext> Ctx{ItaniumMangleContext::create(
       Context, Context.getDiagnostics(), ShouldMangleCallback, MangleCallback)};

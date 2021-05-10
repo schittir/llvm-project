@@ -65,13 +65,12 @@ static QualType GetSYCLKernelObjectType(const FunctionDecl *KernelCaller) {
 }
 
 void Sema::AddSYCLKernelLambda(const FunctionDecl *FD) {
-  auto ShouldMangleCallback = [](ASTContext &Ctx, const TagDecl *TD) {
+  auto ShouldMangleCallback = [](ASTContext &Ctx, const CXXRecordDecl *RD) {
     // We ALWAYS want to descend into the lambda mangling for these.
     return true;
   };
-  auto MangleCallback = [](ASTContext &Ctx, const TagDecl *TD, raw_ostream &) {
-    Ctx.AddSYCLKernelNamingDecl(TD);
-  };
+  auto MangleCallback = [](ASTContext &Ctx, const CXXRecordDecl *RD,
+                           raw_ostream &) { Ctx.AddSYCLKernelNamingDecl(RD); };
 
   QualType Ty = GetSYCLKernelObjectType(FD);
   std::unique_ptr<MangleContext> Ctx{ItaniumMangleContext::create(
