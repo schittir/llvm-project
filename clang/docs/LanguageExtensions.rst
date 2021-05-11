@@ -2316,24 +2316,29 @@ argument.
 
 ``__builtin_unique_stable_name()`` is a builtin that takes a type or unevaluated
 expression and produces a string literal containing a unique name for the type
-(or type of the expression) that is stable across split compilations.
+(or type of the expression) that is stable across split compilations, mainly to
+support SYCL/Data Parallel C++ language.
 
 In cases where the split compilation needs to share a unique token for a type
 across the boundary (such as in an offloading situation), this name can be used
-for lookup purposes.
+for lookup purposes, such as in the SYCL Integration Header.
 
-This builtin is superior to RTTI for this purpose for two reasons.  First, this
-value is computed entirely at compile time, so it can be used in constant
-expressions. Second, this value encodes lambda functions based on line-number
-rather than the order in which it appears in a function. This is valuable
-because it is stable in cases where an unrelated lambda is introduced
-conditionally in the same function.
+The value of this builtin is computed entirely at compile time, so it can be
+used in constant expressions. This value encodes lambda functions based on a
+stable numbering order in which they appears their local declaration contexts.
+If numbering varies across the host and device sides, the device local ordering
+is picked for naming/mangling.
 
-The current implementation of this builtin uses a slightly modified Itanium
-Mangler to produce the unique name. The lambda ordinal is replaced with one or
-more line/column pairs in the format ``LINE->COL``, separated with a ``~``
-character. Typically, only one pair will be included, however in the case of
-macro expansions the entire macro expansion stack is expressed.
+In order to produce the unique name, the current implementation of the bultin
+uses ItaniumMangler to mark all the lambdas required to name the SYCL kernel
+and emits ``10000`` plus the aforementioned stable local
+ordering number of the respective lambdas. The resulting pattern is demanglable.
+
+**Syntax**:
+
+.. code-block:: c
+
+  const char* __builtin_unique_stable_name(type arg)
 
 Multiprecision Arithmetic Builtins
 ----------------------------------
