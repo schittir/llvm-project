@@ -2325,20 +2325,27 @@ for lookup purposes, such as in the SYCL Integration Header.
 
 The value of this builtin is computed entirely at compile time, so it can be
 used in constant expressions. This value encodes lambda functions based on a
-stable numbering order in which they appears their local declaration contexts.
-If numbering varies across the host and device sides, the device local ordering
-is picked for naming/mangling.
+stable numbering order in which they appear in their local declaration contexts.
+Once this builtin is evaluated in a constexpr context, it is erroneous to use
+it in an instantiation which changes its value.
 
 In order to produce the unique name, the current implementation of the bultin
-uses ItaniumMangler to mark all the lambdas required to name the SYCL kernel
-and emits ``10000`` plus the aforementioned stable local
+uses Itanium mangling even if the host compilation may use a different name
+mangling scheme at runtime. The mangler mark all the lambdas required to name
+the SYCL kernel and emits ``10000`` plus the aforementioned stable local
 ordering number of the respective lambdas. The resulting pattern is demanglable.
+Here ``10000`` is to serve as an obvious visual differentiator from ordinary
+lambdas; not emitted when non-lambda types are passed to the builtin.
 
 **Syntax**:
 
 .. code-block:: c
 
-  const char* __builtin_unique_stable_name(type arg)
+  // Computes a unique stable name for the given type.
+  constexpr const char * __builtin_unique_stable_name( type-id );
+
+  // Computes a unique stable name for the type of the given expression.
+  constexpr const char * __builtin_unique_stable_name( expression );
 
 Multiprecision Arithmetic Builtins
 ----------------------------------
