@@ -2330,8 +2330,8 @@ Once this builtin is evaluated in a constexpr context, it is erroneous to use
 it in an instantiation which changes its value.
 
 In order to produce the unique name, the current implementation of the bultin
-uses Itanium mangling even if the host compilation may use a different name
-mangling scheme at runtime. The mangler mark all the lambdas required to name
+uses Itanium mangling even if the host compilation uses a different name
+mangling scheme at runtime. The mangler marks all the lambdas required to name
 the SYCL kernel and emits ``10000`` plus the aforementioned stable local
 ordering number of the respective lambdas. The resulting pattern is demanglable.
 Here ``10000`` is to serve as an obvious visual differentiator from ordinary
