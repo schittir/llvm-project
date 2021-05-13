@@ -2335,7 +2335,8 @@ mangling scheme at runtime. The mangler marks all the lambdas required to name
 the SYCL kernel and emits ``10000`` plus the aforementioned stable local
 ordering number of the respective lambdas. The resulting pattern is demanglable.
 Here ``10000`` is to serve as an obvious visual differentiator from ordinary
-lambdas; not emitted when non-lambda types are passed to the builtin.
+lambdas. When non-lambda types are passed to the builtin, the mangler emits
+their usual pattern without any special treatment.
 
 **Syntax**:
 
