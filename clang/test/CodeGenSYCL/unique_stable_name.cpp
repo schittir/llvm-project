@@ -1,5 +1,4 @@
 // RUN: %clang_cc1 -triple spir64-unknown-unknown-sycldevice -fsycl-is-device -disable-llvm-passes -emit-llvm %s -o - | FileCheck %s
-// RUN: %clang_cc1 -triple spir64-unknown-unknown-sycldevice -DERROR -fsycl-is-device -disable-llvm-passes -emit-llvm %s -o - | FileCheck %s
 // CHECK: @[[LAMBDA_KERNEL3]] = private unnamed_addr constant [[LAMBDA_K3_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ4mainEUlPZ4mainEUlvE10001_E10002_\00"
 // CHECK: @[[INT:[^\w]+]] = private unnamed_addr constant [[INT_SIZE:\[[0-9]+ x i8\]]] c"_ZTSi\00"
 // CHECK: @[[LAMBDA_X:[^\w]+]] = private unnamed_addr constant [[LAMBDA_X_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
@@ -124,10 +123,10 @@ int main() {
         // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv"()
         // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* [[LAMBDA_TWO_DEP]]
       });
-#ifdef DERROR
-  // CHECK: expected-error@+1{{unique-stable-name mangling not implemented yet}}
-  kernel_single_task<class kernel2>(func<Derp>());
-#endif
+
+  kernel_single_task<class kernel2>(func<Derp>);
+  // CHECK: define internal spir_func void @_Z18kernel_single_taskIZ4mainE7kernel2PFPKcvEEvT0_
+  // CHECK: call spir_func void @_Z18kernel_single_taskIZ4mainE7kernel2PFPKcvEEvT0_(i8* ()* @_Z4funcI4DerpEDTu20__unique_stable_nameXsrT_3strEEEv)
 
   auto l1 = []() { return 1; };
   auto l2 = [](decltype(l1) *l = nullptr) { return 2; };
