@@ -6333,9 +6333,9 @@ def warn_gnu_null_ptr_arith : Warning<
   InGroup<NullPointerArithmetic>, DefaultIgnore;
 def err_kernel_invalidates_unique_stable_name
     : Error<"kernel instantiation changes the result of an evaluated "
-            "__builtin_unique_stable_name">;
+            "'__builtin_unique_stable_name'">;
 def note_unique_stable_name_evaluated_here
-    : Note<"__builtin_unique_stable_name evaluated here">;
+    : Note<"'__builtin_unique_stable_name' evaluated here">;
 
 def warn_floatingpoint_eq : Warning<
   "comparing floating point with == or != is unsafe">,
