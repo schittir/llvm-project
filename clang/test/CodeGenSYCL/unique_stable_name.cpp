@@ -1,4 +1,6 @@
 // RUN: %clang_cc1 -triple spir64-unknown-unknown-sycldevice -fsycl-is-device -disable-llvm-passes -emit-llvm %s -o - | FileCheck %s
+// RUN: %clang_cc1 -triple spir64-unknown-unknown-sycldevice -DERROR -fsycl-is-device -disable-llvm-passes -emit-llvm %s -o - | FileCheck %s
+// CHECK: @[[LAMBDA_KERNEL3]] = private unnamed_addr constant [[LAMBDA_K3_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ4mainEUlPZ4mainEUlvE10001_E10002_\00"
 // CHECK: @[[INT:[^\w]+]] = private unnamed_addr constant [[INT_SIZE:\[[0-9]+ x i8\]]] c"_ZTSi\00"
 // CHECK: @[[LAMBDA_X:[^\w]+]] = private unnamed_addr constant [[LAMBDA_X_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
 // CHECK: @[[LAMBDA_Y:[^\w]+]] = private unnamed_addr constant [[LAMBDA_Y_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
@@ -8,10 +10,9 @@
 // CHECK: @[[MACRO_MACRO_Y:[^\w]+]] = private unnamed_addr constant [[MACRO_MACRO_SIZE]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE5_\00"
 // CHECK: @[[LAMBDA_IN_DEP_INT:[^\w]+]] = private unnamed_addr constant [[DEP_INT_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ28lambda_in_dependent_functionIiEvvEUlvE_\00",
 // CHECK: @[[LAMBDA_IN_DEP_X:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ28lambda_in_dependent_functionIZZ4mainENKUlvE10000_clEvEUlvE_EvvEUlvE_\00",
-// CHECK: @[[LAMBDA_NO_DEP:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA1_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ13lambda_no_depIidEvT_T0_EUlidE_\00"
-// CHECK: @[[LAMBDA_TWO_DEP:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA2_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUliE_ZZ4mainENKS0_clEvEUldE_EvvEUlvE_\00"
-// @usn_str.14 = private unnamed_addr constant [85 x i8] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUliE_ZZ4mainENKS0_clEvEUldE_EvvEUlvE_\00"
-// CHECK: @usn_str.15 = private unnamed_addr constant [85 x i8] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUldE_ZZ4mainENKS0_clEvEUliE_EvvEUlvE_\00", align 1
+// CHECK: @[[LAMBDA_NO_DEP:[^\w]+]] = private unnamed_addr constant [[NO_DEP_LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ13lambda_no_depIidEvT_T0_EUlidE_\00"
+// CHECK: @[[LAMBDA_TWO_DEP:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA1_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUliE_ZZ4mainENKS0_clEvEUldE_EvvEUlvE_\00"
+// CHECK: @[[LAMBDA_TWO_DEP2:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA2_SIZE:\[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUldE_ZZ4mainENKS0_clEvEUliE_EvvEUlvE_\00"
 //
 extern "C" void printf(const char *) {}
 
@@ -31,27 +32,39 @@ void lambda_in_dependent_function() {
 
 template <typename Tw, typename Tz>
 void lambda_two_dep() {
-  auto z = [] {};  
-  //auto p = [](Tw a, Tz b) { return ((Tz)a+b); };
+  auto z = [] {};
+  // auto p = [](Tw a, Tz b) { return ((Tz)a+b); };
   printf(__builtin_unique_stable_name(z));
 }
 
 template <typename Tw, typename Tz>
 void lambda_no_dep(Tw a, Tz b) {
-  //auto w = [](Tw a) {return a};
-  //auto z = [](Tz b) {return b};
-  //auto y = [] {};
-  auto p = [](Tw a, Tz b) { return ((Tz)a+b); };
+  // auto w = [](Tw a) {return a};
+  // auto z = [](Tz b) {return b};
+  // auto y = [] {};
+  auto p = [](Tw a, Tz b) { return ((Tz)a + b); };
   printf(__builtin_unique_stable_name(p));
 }
 
-#define DEF_IN_MACRO()                                  \
-  auto MACRO_X = []() {};auto MACRO_Y = []() {};        \
-  printf(__builtin_unique_stable_name(MACRO_X));        \
+#define DEF_IN_MACRO()                           \
+  auto MACRO_X = []() {};                        \
+  auto MACRO_Y = []() {};                        \
+  printf(__builtin_unique_stable_name(MACRO_X)); \
   printf(__builtin_unique_stable_name(MACRO_Y));
 
-#define MACRO_CALLS_MACRO()                             \
-  {DEF_IN_MACRO();}{DEF_IN_MACRO();}
+#define MACRO_CALLS_MACRO() \
+  { DEF_IN_MACRO(); }       \
+  { DEF_IN_MACRO(); }
+
+template <typename Ty>
+auto func() -> decltype(__builtin_unique_stable_name(Ty::str));
+
+struct Derp {
+  static constexpr const char str[] = "derp derp derp";
+};
+#define IF_MACRO()              \
+  auto l1 = []() { return 1; }; \
+  constexpr const char *l1_output = __builtin_unique_stable_name(l1);
 
 template <typename KernelName, typename KernelType>
 [[clang::sycl_kernel]] void kernel_single_task(KernelType kernelFunc) {
@@ -60,56 +73,66 @@ template <typename KernelName, typename KernelType>
 
 int main() {
   kernel_single_task<class kernel>(
-    []() {
-      printf(__builtin_unique_stable_name(int));
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[INT_SIZE]], [[INT_SIZE]]* @[[INT]]
+      []() {
+        printf(__builtin_unique_stable_name(int));
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[INT_SIZE]], [[INT_SIZE]]* @[[INT]]
 
-      auto x = [](){};
-      printf(__builtin_unique_stable_name(x));
-      printf(__builtin_unique_stable_name(decltype(x)));
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_X_SIZE]], [[LAMBDA_X_SIZE]]* @[[LAMBDA_X]]
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_Y_SIZE]], [[LAMBDA_Y_SIZE]]* @[[LAMBDA_Y]] 
+        auto x = []() {};
+        printf(__builtin_unique_stable_name(x));
+        printf(__builtin_unique_stable_name(decltype(x)));
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_X_SIZE]], [[LAMBDA_X_SIZE]]* @[[LAMBDA_X]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_Y_SIZE]], [[LAMBDA_Y_SIZE]]* @[[LAMBDA_Y]]
 
-      DEF_IN_MACRO();
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_SIZE]], [[MACRO_SIZE]]* @[[MACRO_X]]
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_SIZE]], [[MACRO_SIZE]]* @[[MACRO_Y]]
+        DEF_IN_MACRO();
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_SIZE]], [[MACRO_SIZE]]* @[[MACRO_X]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_SIZE]], [[MACRO_SIZE]]* @[[MACRO_Y]]
 
-      MACRO_CALLS_MACRO();
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_X]]
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_Y]]
+        MACRO_CALLS_MACRO();
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_X]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_Y]]
 
-      template_param<int>();
-      // CHECK: define linkonce_odr spir_func void @_Z14template_paramIiEvv
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[INT_SIZE]], [[INT_SIZE]]* @[[INT]]
+        template_param<int>();
+        // CHECK: define linkonce_odr spir_func void @_Z14template_paramIiEvv
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[INT_SIZE]], [[INT_SIZE]]* @[[INT]]
 
-      template_param<decltype(x)>();
-      // CHECK: define internal spir_func void @"_Z14template_paramIZZ4mainENK3
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_X_SIZE]], [[LAMBDA_X_SIZE]]* @[[LAMBDA_X]]
+        template_param<decltype(x)>();
+        // CHECK: define internal spir_func void @"_Z14template_paramIZZ4mainENK3
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_X_SIZE]], [[LAMBDA_X_SIZE]]* @[[LAMBDA_X]]
 
-      lambda_in_dependent_function<int>();
-      // CHECK: define linkonce_odr spir_func void @_Z28lambda_in_dependent_functionIiEvv
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_INT_SIZE]], [[DEP_INT_SIZE]]* @[[LAMBDA_IN_DEP_INT]]
+        lambda_in_dependent_function<int>();
+        // CHECK: define linkonce_odr spir_func void @_Z28lambda_in_dependent_functionIiEvv
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_INT_SIZE]], [[DEP_INT_SIZE]]* @[[LAMBDA_IN_DEP_INT]]
 
-      lambda_in_dependent_function<decltype(x)>();
-      // CHECK: define internal spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENK3$_0clEvEUlvE_Evv
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA_SIZE]], [[DEP_LAMBDA_SIZE]]* @[[LAMBDA_IN_DEP_X]]
-      
-      lambda_no_dep<int,double>(3, 5.5);
-      // CHECK: define linkonce_odr spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 %a, double %b)
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([38 x i8], [38 x i8]* @usn_str.13, i32 0, i32 0)) #1
-      //  call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* [[LAMBDA_NO_DEP]]
+        lambda_in_dependent_function<decltype(x)>();
+        // CHECK: define internal spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENK3$_0clEvEUlvE_Evv
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA_SIZE]], [[DEP_LAMBDA_SIZE]]* @[[LAMBDA_IN_DEP_X]]
 
-      int a = 5;
-      double b = 10.7; 
-      auto y = [](int a) {return a;};
-      auto z = [](double b) {return b;};
-      lambda_two_dep<decltype(y), decltype(z)>();
-      // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv" 
-      // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* [[LAMBDA_TWO_DEP]]
-      // call spir_func void @printf(i8* getelementptr inbounds ([85 x i8], [85 x i8]* @usn_str.14, i32 0, i32 0)) #1
-     lambda_two_dep<decltype(z), decltype(y)>(); 
-     // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv"()
-     // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([85 x i8], [85 x i8]* @usn_str.15, i32 0, i32 0)) #1
-     //
-    });
+        lambda_no_dep<int, double>(3, 5.5);
+        // CHECK: define linkonce_odr spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 %a, double %b)
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([38 x i8], [38 x i8]* @usn_str.13, i32 0, i32 0)) #1
+        //  call spir_func void @printf(i8* getelementptr inbounds ([[NO_DEP_LAMBDA_SIZE]], [[NO_DEP_LAMBDA_SIZE]]* [[LAMBDA_NO_DEP]]
+
+        int a = 5;
+        double b = 10.7;
+        auto y = [](int a) { return a; };
+        auto z = [](double b) { return b; };
+        lambda_two_dep<decltype(y), decltype(z)>();
+        // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv"
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* [[LAMBDA_TWO_DEP]]
+
+        lambda_two_dep<decltype(z), decltype(y)>();
+        // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv"()
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* [[LAMBDA_TWO_DEP]]
+      });
+#ifdef DERROR
+  // CHECK: expected-error@+1{{unique-stable-name mangling not implemented yet}}
+  kernel_single_task<class kernel2>(func<Derp>());
+#endif
+
+  auto l1 = []() { return 1; };
+  auto l2 = [](decltype(l1) *l = nullptr) { return 2; };
+  kernel_single_task<class kernel3>(l2);
+  printf(__builtin_unique_stable_name(l2));
+  // CHECK: define internal spir_func void @"_Z18kernel_single_taskIZ4mainE7kernel3Z4mainE3$_1EvT0_"
+  // CHECK: call spir_func i32 @"_ZZ4mainENK3$_1clEPZ4mainE3$_2"
 }

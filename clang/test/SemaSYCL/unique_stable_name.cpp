@@ -1,6 +1,6 @@
 // RUN: %clang_cc1 %s -fsyntax-only -ast-dump -fsycl-is-device -triple spir64 -verify
 
-// expected-error@+2{{kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
+// expected-error 4 @+2{{kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
 template <typename KernelName, typename KernelType>
 [[clang::sycl_kernel]] void kernel_single_task(KernelType kernelFunc) {
   kernelFunc();
@@ -8,7 +8,6 @@ template <typename KernelName, typename KernelType>
 template <template <typename> typename Outer, typename Inner>
 struct S {
   void operator()() const;
-  //SYCL_EXTERNAL void operator()() const;
 };
 
 template <typename Ty>
@@ -27,7 +26,7 @@ void kernel4func(const Func &F4) {
   // expected-note@+1{{__builtin_unique_stable_name evaluated here}}
   constexpr const char *F4_output = __builtin_unique_stable_name(F4);
   // expected-error@+1{{error: kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
-  kernel_single_task<class kernel4>([](){});
+  kernel_single_task<class kernel4>([]() {});
 }
 
 template <typename Ty>
@@ -40,12 +39,16 @@ struct Derp {
 template <typename T>
 static constexpr const char *output1 = __builtin_unique_stable_name(T);
 
+#define MACRO12()                \
+  auto l12 = []() { return 1; }; \
+  constexpr const char *l1_output = __builtin_unique_stable_name(l12);
+
 int main() {
-  // kernel0  
-  kernel_single_task<class kernel0>(func<Derp>());
-     // []() {
-     //   func<Derp>;
-     // });
+  // kernel0
+  kernel_single_task<class kernel0>( // func<Derp>());
+      []() {
+        func<Derp>();
+      });
 
   // kernel1 Evaluate the builtin in a constant context, then call the kernel with that same type
   auto l1 = []() {};
@@ -62,10 +65,10 @@ int main() {
 
   // kernel3
   // The current function is named with a lambda (that is, takes a lambda as a template parameter).  Call the builtin (perhaps on the current function?), then pass it to a kernel.
-  kernel3func([](){});
+  kernel3func([]() {});
 
   // kernel4 Same as above, but you use a NEW lambda defined inline to name the kernel.
-  kernel4func([](){});
+  kernel4func([]() {});
 
   // kernel5 - same as kernel11 below?
   // Same as the above two, except the thing in the template parameter/kernel calls are a function object that has a lambda in its template parameters.
@@ -106,5 +109,11 @@ int main() {
   // Pass the lambda as a template template parameter to a kernel
   auto l11 = []() { return 1; };
   constexpr const char *l11_output = __builtin_unique_stable_name(l11);
-  kernel_single_task<class kernel12>(S<T, decltype(l11)>{});
+  kernel_single_task<class kernel11>(S<T, decltype(l11)>{});
+
+  kernel_single_task<class kernel12>(
+      []() {
+        // expected-error@+1{{kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
+        MACRO12();
+      });
 }
