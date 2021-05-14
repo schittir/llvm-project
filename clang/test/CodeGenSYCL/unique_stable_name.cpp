@@ -1,5 +1,5 @@
 // RUN: %clang_cc1 -triple spir64-unknown-unknown-sycldevice -fsycl-is-device -disable-llvm-passes -emit-llvm %s -o - | FileCheck %s
-// CHECK: @[[LAMBDA_KERNEL3]] = private unnamed_addr constant [[LAMBDA_K3_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ4mainEUlPZ4mainEUlvE10001_E10002_\00"
+// CHECK: @[[LAMBDA_KERNEL3:[^\w]+]] = private unnamed_addr constant [[LAMBDA_K3_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ4mainEUlPZ4mainEUlvE10001_E10002_\00"
 // CHECK: @[[INT:[^\w]+]] = private unnamed_addr constant [[INT_SIZE:\[[0-9]+ x i8\]]] c"_ZTSi\00"
 // CHECK: @[[LAMBDA_X:[^\w]+]] = private unnamed_addr constant [[LAMBDA_X_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
 // CHECK: @[[LAMBDA_Y:[^\w]+]] = private unnamed_addr constant [[LAMBDA_Y_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
@@ -7,11 +7,13 @@
 // CHECK: @[[MACRO_Y:[^\w]+]] =  private unnamed_addr constant [[MACRO_SIZE]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE1_\00"
 // CHECK: @[[MACRO_MACRO_X:[^\w]+]] = private unnamed_addr constant [[MACRO_MACRO_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE4_\00"
 // CHECK: @[[MACRO_MACRO_Y:[^\w]+]] = private unnamed_addr constant [[MACRO_MACRO_SIZE]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE5_\00"
+// CHECK: @[[LAMBDA:[^\w]+]] = private unnamed_addr constant [[LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
+// @usn_str.11 = private unnamed_addr constant [35 x i8] c"_ZTSZZ4mainENKUlvE10000_clEvEUlvE_\00"
 // CHECK: @[[LAMBDA_IN_DEP_INT:[^\w]+]] = private unnamed_addr constant [[DEP_INT_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ28lambda_in_dependent_functionIiEvvEUlvE_\00",
 // CHECK: @[[LAMBDA_IN_DEP_X:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ28lambda_in_dependent_functionIZZ4mainENKUlvE10000_clEvEUlvE_EvvEUlvE_\00",
-// CHECK: @[[LAMBDA_NO_DEP:[^\w]+]] = private unnamed_addr constant [[NO_DEP_LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ13lambda_no_depIidEvT_T0_EUlidE_\00"
-// CHECK: @[[LAMBDA_TWO_DEP:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA1_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUliE_ZZ4mainENKS0_clEvEUldE_EvvEUlvE_\00"
-// CHECK: @[[LAMBDA_TWO_DEP2:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA2_SIZE:\[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUldE_ZZ4mainENKS0_clEvEUliE_EvvEUlvE_\00"
+// CHECK: @[[LAMBDA_NO_DEP:[^\w]+]] = private unnamed_addr constant [[NO_DEP_LAMBDA_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ13lambda_no_depIidEvT_T0_EUlidE_\00",
+// CHECK: @[[LAMBDA_TWO_DEP:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA1_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUliE_ZZ4mainENKS0_clEvEUldE_EvvEUlvE_\00",
+// CHECK: @[[LAMBDA_TWO_DEP2:[^\w]+]] = private unnamed_addr constant [[DEP_LAMBDA2_SIZE:\[[0-9]+ x i8\]]] c"_ZTSZ14lambda_two_depIZZ4mainENKUlvE10000_clEvEUldE_ZZ4mainENKS0_clEvEUliE_EvvEUlvE_\00",
 //
 extern "C" void printf(const char *) {}
 
@@ -95,21 +97,20 @@ int main() {
         // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[INT_SIZE]], [[INT_SIZE]]* @[[INT]]
 
         template_param<decltype(x)>();
-        // CHECK: define internal spir_func void @"_Z14template_paramIZZ4mainENK3
-        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_X_SIZE]], [[LAMBDA_X_SIZE]]* @[[LAMBDA_X]]
+        // CHECK: define internal spir_func void @"_Z14template_paramIZZ4mainENK3$_0clEvEUlvE_Evv"
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[LAMBDA_SIZE]], [[LAMBDA_SIZE]]* @[[LAMBDA]]
 
         lambda_in_dependent_function<int>();
         // CHECK: define linkonce_odr spir_func void @_Z28lambda_in_dependent_functionIiEvv
         // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_INT_SIZE]], [[DEP_INT_SIZE]]* @[[LAMBDA_IN_DEP_INT]]
 
         lambda_in_dependent_function<decltype(x)>();
-        // CHECK: define internal spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENK3$_0clEvEUlvE_Evv
+        // CHECK: define internal spir_func void @"_Z28lambda_in_dependent_functionIZZ4mainENK3$_0clEvEUlvE_Evv"
         // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA_SIZE]], [[DEP_LAMBDA_SIZE]]* @[[LAMBDA_IN_DEP_X]]
 
         lambda_no_dep<int, double>(3, 5.5);
         // CHECK: define linkonce_odr spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 %a, double %b)
-        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([38 x i8], [38 x i8]* @usn_str.13, i32 0, i32 0)) #1
-        //  call spir_func void @printf(i8* getelementptr inbounds ([[NO_DEP_LAMBDA_SIZE]], [[NO_DEP_LAMBDA_SIZE]]* [[LAMBDA_NO_DEP]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[NO_DEP_LAMBDA_SIZE]], [[NO_DEP_LAMBDA_SIZE]]* @[[LAMBDA_NO_DEP]]
 
         int a = 5;
         double b = 10.7;
@@ -117,11 +118,11 @@ int main() {
         auto z = [](double b) { return b; };
         lambda_two_dep<decltype(y), decltype(z)>();
         // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv"
-        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* [[LAMBDA_TWO_DEP]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* @[[LAMBDA_TWO_DEP]]
 
         lambda_two_dep<decltype(z), decltype(y)>();
         // CHECK: define internal spir_func void @"_Z14lambda_two_depIZZ4mainENK3$_0clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv"()
-        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* [[LAMBDA_TWO_DEP]]
+        // CHECK: call spir_func void @printf(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* @[[LAMBDA_TWO_DEP2]]
       });
 
   kernel_single_task<class kernel2>(func<Derp>);
