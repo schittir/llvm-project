@@ -4093,8 +4093,6 @@ recurse:
   case Expr::OMPIteratorExprClass:
   case Expr::CXXInheritedCtorInitExprClass:
     llvm_unreachable("unexpected statement kind");
-  case Expr::UniqueStableNameExprClass:
-    llvm_unreachable("unique-stable-name mangling not implemented yet");
 
   case Expr::ConstantExprClass:
     E = cast<ConstantExpr>(E)->getSubExpr();
@@ -4953,6 +4951,20 @@ recurse:
     Out << "v18co_yield";
     mangleExpression(cast<CoawaitExpr>(E)->getOperand());
     break;
+  case Expr::UniqueStableNameExprClass: {
+    const auto *USN = cast<UniqueStableNameExpr>(E);
+    NotPrimaryExpr();
+
+    TemplateArgument TA;
+    Out << "u20__unique_stable_name";
+    if (USN->isExpr()) {
+      mangleTemplateArgExpr(USN->getExpr());
+    } else {
+      mangleType(USN->getTypeSourceInfo()->getType());
+    }
+    Out << "E";
+    break;
+  }
   }
 
   if (AsTemplateArg && !IsPrimaryExpr)

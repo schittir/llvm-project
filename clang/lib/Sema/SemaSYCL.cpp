@@ -77,5 +77,4 @@ void Sema::AddSYCLKernelLambda(const FunctionDecl *FD) {
       Context, Context.getDiagnostics(), ShouldMangleCallback, MangleCallback)};
   llvm::raw_null_ostream Out;
   Ctx->mangleTypeName(Ty, Out);
-  (void)FD;
 }
