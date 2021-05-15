@@ -1,6 +1,6 @@
 // RUN: %clang_cc1 %s -fsyntax-only -ast-dump -fsycl-is-device -triple spir64 -verify
 
-// expected-error 4 @+2{{kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
+// expected-error 8 @+2{{kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
 template <typename KernelName, typename KernelType>
 [[clang::sycl_kernel]] void kernel_single_task(KernelType kernelFunc) {
   kernelFunc();
@@ -27,6 +27,12 @@ void kernel4func(const Func &F4) {
   constexpr const char *F4_output = __builtin_unique_stable_name(F4);
   // expected-error@+1{{error: kernel instantiation changes the result of an evaluated __builtin_unique_stable_name}}
   kernel_single_task<class kernel4>([]() {});
+}
+
+template <typename Func>
+void kernel13_14func(const Func &F) {
+  kernel_single_task<class kernel13>(F);
+  kernel_single_task<class kernel14>(F); // Using the same functor twice should be fine
 }
 
 template <typename Ty>
@@ -70,6 +76,9 @@ int main() {
   // kernel4 Same as above, but you use a NEW lambda defined inline to name the kernel.
   kernel4func([]() {});
 
+  // kernel13 and kernel14 - expect no error
+  kernel13_14func([]() {}); // pass the same lambda to two kernels
+
   // kernel5 - same as kernel11 below?
   // Same as the above two, except the thing in the template parameter/kernel calls are a function object that has a lambda in its template parameters.
 
@@ -98,12 +107,14 @@ int main() {
   // Within a constexpr if, pass the first lambda to a kernel in the true branch, pass the second lambda to a kernel in the false branch
   auto l9 = []() { return 1; };
   auto l10 = []() { return 2; };
+  // expected-note@+1{{'__builtin_unique_stable_name' evaluated here}}
   constexpr const char *l10_output = __builtin_unique_stable_name(l10);
-  if constexpr (1)
+  if constexpr (1) {
     kernel_single_task<class kernel8>(l9);
-  else
+  } else {
+    // expected-note@+1{{in instantiation of function template specialization}}
     kernel_single_task<class kernel9>(l10);
-
+  }
   // Make a lambda
   // Call the builtin on the first lambda (in a constexpr context)
   // Pass the lambda as a template template parameter to a kernel
