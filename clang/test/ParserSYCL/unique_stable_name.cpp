@@ -13,7 +13,7 @@ void f(int var) {
 
   // expected-error@+2{{expected ')'}}
   // expected-note@+1{{to match this '('}}
-  __builtin_unique_stable_name(int; //Missing paren before semicolon
+  __builtin_unique_stable_name(int; // Missing paren before semicolon
 
   // expected-error@+2{{expected ')'}}
   // expected-note@+1{{to match this '('}}
