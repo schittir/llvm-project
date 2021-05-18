@@ -571,7 +571,6 @@ static void instantiateDependentSYCLKernelAttr(
              diag::note_unique_stable_name_evaluated_here);
       // Update this so future diagnostics work correctly.
       Itr.second = CurName;
-      return;
     }
   }
 
