@@ -5,6 +5,14 @@ template <typename KernelName, typename KernelType>
   kernelFunc();
 }
 
+// kernel3 - expect error
+// The current function is named with a lambda (i.e., takes a lambda as a
+// template parameter. Call the builtin on the current function
+// Then it is passed to kernel
+// Error is thrown because the current function is passed to the kernel,
+// thus part of the latter's name, after its unique stable is already computed
+// Current function is a part of that name, causing its unique_stable_name
+// mangling to change
 template <typename Func>
 void kernel3func(const Func &F3) {
   // expected-note@+1{{'__builtin_unique_stable_name' evaluated here}}
@@ -15,7 +23,13 @@ void kernel3func(const Func &F3) {
   kernel_single_task<class kernel3>(F3);
 }
 
-//
+// kernel4 - expect error
+// The current function is named with a lambda (i.e., takes a lambda as a
+// template parameter. Call the builtin on the current function
+// Then an empty lambda is passed to kernel
+// Error is thrown because the empty lambda is named based on kernel4func
+// Current function is a part of that name, causing its unique_stable_name
+// mangling to change
 template <typename Func>
 void kernel4func(const Func &F4) {
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
@@ -82,20 +96,11 @@ int main() {
   kernel_single_task<class kernel2>(l2);
 
   // kernel3 - expect error
-  // The current function is named with a lambda (that is, takes a lambda as a
-  // template parameter). Call the builtin on the current function
-  // Then current function is passed to kernel
   // expected-note@#USN_l7{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel3func([]() {}); // #kernel3func_call
 
   // kernel4 - expect error
-  // The current function is named with a lambda (i.e., takes a lambda as a
-  // template parameter. Call the builtin on the current function
-  // Then an empty lambda is passed to kernel
-  // Error is thrown because the empty lambda is named based on kernel4func
-  // Current function is a part of that name, causing its unique_stable_name
-  // mangling to change
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel4func([]() {});
 
@@ -140,10 +145,6 @@ int main() {
   // kernel13 and kernel14 - expect no error
   // pass the same lambda to two kernels
   kernel13_14func([]() {}); // #kernel13_14func_call expected-note {{in instantiation of function template specialization}}
-
-  // kernel5 - same as kernel11 below?
-  // Same as the above two, except the thing in the template parameter
-  // kernel calls are a function object that has a lambda in its template parameters.
 
   // kernel6 - expect no error
   // Make a lambda
