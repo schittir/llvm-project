@@ -21,6 +21,11 @@ void f(int var) {
 
   __builtin_unique_stable_name(var);
   __builtin_unique_stable_name(NS::good);
+
+  // expected-error@+1{{expected expression}}
+  __builtin_unique_stable_name(for (int i = 0; i < 10; ++i) {})
+  __builtin_unique_stable_name({
+    (for (int i = 0; i < 10; ++i){})})
 }
 
 template <typename T>
