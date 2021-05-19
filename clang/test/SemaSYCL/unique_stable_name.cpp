@@ -10,6 +10,7 @@ void kernel3func(const Func &F3) {
   // expected-note@+1{{'__builtin_unique_stable_name' evaluated here}}
   constexpr const char *F3_output = __builtin_unique_stable_name(F3);
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#kernel3func_call{{in instantiation of function template specialization}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel_single_task<class kernel3>(F3);
 }
@@ -17,8 +18,9 @@ void kernel3func(const Func &F3) {
 //
 template <typename Func>
 void kernel4func(const Func &F4) {
-  // expected-note@+1{{'__builtin_unique_stable_name' evaluated here}}
-  constexpr const char *F4_output = __builtin_unique_stable_name(F4);
+  // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_F4{{'__builtin_unique_stable_name' evaluated here}}
+  constexpr const char *F4_output = __builtin_unique_stable_name(F4); // #USN_F4
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel_single_task<class kernel4>([]() {});
@@ -35,6 +37,8 @@ struct T {};
 template <typename Func>
 void kernel13_14func(const Func &F) {
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_l12{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel_single_task<class kernel13>(F);
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
@@ -54,7 +58,8 @@ static constexpr const char *output1 = __builtin_unique_stable_name(T);
 
 #define MACRO12()                \
   auto l12 = []() { return 1; }; \
-  constexpr const char *l1_output = __builtin_unique_stable_name(l12);
+  constexpr const char *l1_output = __builtin_unique_stable_name(l12); // #USN_l12
+// expected-note@-1{{expanded from macro 'MACRO12'}}
 
 int main() {
 
@@ -80,8 +85,9 @@ int main() {
   // The current function is named with a lambda (that is, takes a lambda as a
   // template parameter). Call the builtin on the current function
   // Then current function is passed to kernel
+  // expected-note@#USN_l7{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel3func([]() {});
+  kernel3func([]() {}); // #kernel3func_call
 
   // kernel4 - expect error
   // The current function is named with a lambda (i.e., takes a lambda as a
@@ -97,7 +103,10 @@ int main() {
   // Same as kernel6, except make l6 part of naming kernel
   auto l7 = []() { return 1; };
   auto l8 = [](decltype(l7) *derp = nullptr) { return 2; };
-  constexpr const char *l7_output = __builtin_unique_stable_name(l7); // expected-note 3 {{'__builtin_unique_stable_name' evaluated here}}
+  // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l7{{'__builtin_unique_stable_name' evaluated here}}
+  constexpr const char *l7_output = __builtin_unique_stable_name(l7); // #USN_l7
+
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
   // expected-note@#USN_L2{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
@@ -110,12 +119,17 @@ int main() {
   // pass the second lambda to a kernel in the false branch
   auto l9 = []() { return 1; };
   auto l10 = []() { return 2; };
-  constexpr const char *l10_output = __builtin_unique_stable_name(l10); // expected-note 3 {{'__builtin_unique_stable_name' evaluated here}}
+  // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l10{{'__builtin_unique_stable_name' evaluated here}}
+  constexpr const char *l10_output = __builtin_unique_stable_name(l10); // #USN_l10
+
   if constexpr (1) {
     // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
     kernel_single_task<class kernel8>(l9);
   } else {
     // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+    // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
+    // expected-note@#USN_l10{{'__builtin_unique_stable_name' evaluated here}}
     // expected-note@+1{{in instantiation of function template specialization}}
     kernel_single_task<class kernel9>(l10);
   }
@@ -125,7 +139,7 @@ int main() {
   //
   // kernel13 and kernel14 - expect no error
   // pass the same lambda to two kernels
-  kernel13_14func([]() {}); // expected-note {{in instantiation of function template specialization}}
+  kernel13_14func([]() {}); // #kernel13_14func_call expected-note {{in instantiation of function template specialization}}
 
   // kernel5 - same as kernel11 below?
   // Same as the above two, except the thing in the template parameter
@@ -145,16 +159,26 @@ int main() {
   // Call the builtin on the first lambda (in a constexpr context)
   // Pass the lambda as a template template parameter to a kernel
   auto l11 = []() { return 1; };
-  constexpr const char *l11_output = __builtin_unique_stable_name(l11); // expected-note 4 {{'__builtin_unique_stable_name' evaluated here}}
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
+  constexpr const char *l11_output = __builtin_unique_stable_name(l11); // #USN_l11
+
+  // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel_single_task<class kernel11>(S<T, decltype(l11)>{});
 
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+  // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_MACRO12{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_l12{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel12>( // 7th instantiation throwing error
+  kernel_single_task<class kernel12>(
       []() {
-        MACRO12(); // expected-note 4 {{'__builtin_unique_stable_name' evaluated here}}
+        // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
+        // expected-note@#USN_l12{{expanded from macro 'MACRO12'}}
+        // expected-note@#USN_MACRO12{{'__builtin_unique_stable_name' evaluated here}}
+        MACRO12(); // #USN_MACRO12
       });
 }
 
