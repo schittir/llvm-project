@@ -8675,7 +8675,8 @@ public:
     Info.Ctx.UniqueStableNameEvaluatedValues[E] = ResultStr;
 
     QualType CharTy = Info.Ctx.CharTy.withConst();
-    APInt Size(Info.Ctx.getTypeSize(Info.Ctx.getSizeType()), ResultStr.size());
+    APInt Size(Info.Ctx.getTypeSize(Info.Ctx.getSizeType()),
+               ResultStr.size() + 1);
     QualType ArrayTy = Info.Ctx.getConstantArrayType(CharTy, Size, nullptr,
                                                      ArrayType::Normal, 0);
 

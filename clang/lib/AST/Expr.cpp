@@ -594,7 +594,7 @@ std::string UniqueStableNameExpr::ComputeName(ASTContext &Context,
   llvm::raw_string_ostream Out(Buffer);
   Ctx->mangleTypeName(Ty, Out);
 
-  return std::move(Buffer);
+  return Out.str();
 }
 
 PredefinedExpr::PredefinedExpr(SourceLocation L, QualType FNTy, IdentKind IK,
