@@ -96,46 +96,32 @@ int main() {
         // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_X]]
         // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[MACRO_MACRO_SIZE]], [[MACRO_MACRO_SIZE]]* @[[MACRO_MACRO_Y]]
 
-        // CHECK: call spir_func void @_Z14template_paramIiEvv
-        // CHECK: call spir_func void @_Z14template_paramIZZ4mainENKUlvE_clEvEUlvE_Evv
-        // CHECK: call spir_func void @_Z28lambda_in_dependent_functionIiEvv
-        // CHECK: call spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENKUlvE_clEvEUlvE_Evv
-        // CHECK: call spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 3, double 5.500000e+00)
-        // CHECK: store i32 5, i32* %a, align 4
-        // CHECK: store double 1.070000e+01, double* %b, align 8
-        // CHECK: call spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv
-        // CHECK: call spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv
         template_param<int>();
-        // CHECK: define linkonce_odr spir_func void @_Z14template_paramIiEvv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[INT1_SIZE]], [[INT1_SIZE]]* @[[INT1]]
+        // CHECK: call spir_func void @_Z14template_paramIiEvv
 
         template_param<decltype(x)>();
-        // CHECK: define internal spir_func void @_Z14template_paramIZZ4mainENKUlvE_clEvEUlvE_Evv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[LAMBDA_SIZE]], [[LAMBDA_SIZE]]* @[[LAMBDA]]
+        // CHECK: call spir_func void @_Z14template_paramIZZ4mainENKUlvE_clEvEUlvE_Evv
 
         lambda_in_dependent_function<int>();
-        // CHECK: define linkonce_odr spir_func void @_Z28lambda_in_dependent_functionIiEvv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_INT_SIZE]], [[DEP_INT_SIZE]]* @[[LAMBDA_IN_DEP_INT]]
+        // CHECK: call spir_func void @_Z28lambda_in_dependent_functionIiEvv
 
         lambda_in_dependent_function<decltype(x)>();
-        // CHECK: define internal spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENKUlvE_clEvEUlvE_Evv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA_SIZE]], [[DEP_LAMBDA_SIZE]]* @[[LAMBDA_IN_DEP_X]]
+        // CHECK: call spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENKUlvE_clEvEUlvE_Evv
 
         lambda_no_dep<int, double>(3, 5.5);
-        // CHECK: define linkonce_odr spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 %a, double %b)
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[NO_DEP_LAMBDA_SIZE]], [[NO_DEP_LAMBDA_SIZE]]* @[[LAMBDA_NO_DEP]]
+        // CHECK: call spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 3, double 5.500000e+00)
 
         int a = 5;
         double b = 10.7;
         auto y = [](int a) { return a; };
         auto z = [](double b) { return b; };
         lambda_two_dep<decltype(y), decltype(z)>();
-        // CHECK: define internal spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* @[[LAMBDA_TWO_DEP]]
+        // CHECK: store i32 5, i32* %a, align 4
+        // CHECK: store double 1.070000e+01, double* %b, align 8
+        // CHECK: call spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv
 
         lambda_two_dep<decltype(z), decltype(y)>();
-        // CHECK: define internal spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv
-        // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* @[[LAMBDA_TWO_DEP2]]
+        // CHECK: call spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv
       });
 
   kernel_single_task<class kernel2>(func<Derp>);
@@ -145,7 +131,28 @@ int main() {
   kernel_single_task<class kernel3>(l2);
   puts(__builtin_unique_stable_name(l2));
 
-  // TO-DO
+
+  // CHECK: define linkonce_odr spir_func void @_Z14template_paramIiEvv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[INT1_SIZE]], [[INT1_SIZE]]* @[[INT1]]
+
+  // CHECK: define internal spir_func void @_Z14template_paramIZZ4mainENKUlvE_clEvEUlvE_Evv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[LAMBDA_SIZE]], [[LAMBDA_SIZE]]* @[[LAMBDA]]
+
+  // CHECK: define linkonce_odr spir_func void @_Z28lambda_in_dependent_functionIiEvv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_INT_SIZE]], [[DEP_INT_SIZE]]* @[[LAMBDA_IN_DEP_INT]]
+
+  // CHECK: define internal spir_func void @_Z28lambda_in_dependent_functionIZZ4mainENKUlvE_clEvEUlvE_Evv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA_SIZE]], [[DEP_LAMBDA_SIZE]]* @[[LAMBDA_IN_DEP_X]]
+
+  // CHECK: define linkonce_odr spir_func void @_Z13lambda_no_depIidEvT_T0_(i32 %a, double %b)
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[NO_DEP_LAMBDA_SIZE]], [[NO_DEP_LAMBDA_SIZE]]* @[[LAMBDA_NO_DEP]]
+
+  // CHECK: define internal spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUliE_ZZ4mainENKS0_clEvEUldE_Evv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA1_SIZE]], [[DEP_LAMBDA1_SIZE]]* @[[LAMBDA_TWO_DEP]]
+
+  // CHECK: define internal spir_func void @_Z14lambda_two_depIZZ4mainENKUlvE_clEvEUldE_ZZ4mainENKS0_clEvEUliE_Evv
+  // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[DEP_LAMBDA2_SIZE]], [[DEP_LAMBDA2_SIZE]]* @[[LAMBDA_TWO_DEP2]]
+
   constexpr const char str[] = "lalala";
   static_assert(__builtin_strcmp(__builtin_unique_stable_name(str), "_ZTSA7_Kc\00") == 0, "unexpected mangling");
 
@@ -156,7 +163,5 @@ int main() {
   // FIXME: Ensure that j is incremented because VLAs are terrible
   int j = 55;
   puts(__builtin_unique_stable_name(int[++j])); // No warning
-
-
 
 }
