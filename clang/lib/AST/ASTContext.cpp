@@ -2448,7 +2448,7 @@ unsigned ASTContext::getPreferredTypeAlign(const Type *T) const {
   // The preferred alignment of member pointers is that of a pointer.
   if (T->isMemberPointerType())
     return getPreferredTypeAlign(getPointerDiffType().getTypePtr());
- 
+
   if (!Target->allowsLargerPreferedTypeAlignment())
     return ABIAlign;
 
@@ -11671,6 +11671,26 @@ bool ASTContext::IsSYCLKernelNamingDecl(const CXXRecordDecl *RD) const {
   return Itr->getSecond().count(RD);
 }
 
+// Filters the Decls list to those that share the lambda mangling with the
+// passed RD.
+static void FilterSYCLKernelNamingDecls(
+    ASTContext &Ctx, const CXXRecordDecl *RD,
+    llvm::SmallVectorImpl<const CXXRecordDecl *> &Decls) {
+  static std::unique_ptr<ItaniumMangleContext> Mangler{
+      ItaniumMangleContext::create(Ctx, Ctx.getDiagnostics())};
+
+  llvm::SmallString<128> LambdaSig;
+  llvm::raw_svector_ostream Out(LambdaSig);
+  Mangler->mangleLambdaSig(RD, Out);
+
+  llvm::erase_if(Decls, [&LambdaSig](const CXXRecordDecl *LocalRD) {
+    llvm::SmallString<128> LocalLambdaSig;
+    llvm::raw_svector_ostream LocalOut(LocalLambdaSig);
+    Mangler->mangleLambdaSig(LocalRD, LocalOut);
+    return LambdaSig != LocalLambdaSig;
+  });
+}
+
 unsigned ASTContext::GetSYCLKernelNamingIndex(const CXXRecordDecl *RD) const {
   assert(IsSYCLKernelNamingDecl(RD) &&
          "Lambda not involved in mangling asked for a naming index?");
@@ -11684,6 +11704,14 @@ unsigned ASTContext::GetSYCLKernelNamingIndex(const CXXRecordDecl *RD) const {
   const llvm::SmallPtrSet<const CXXRecordDecl *, 4> &Set = Itr->getSecond();
 
   llvm::SmallVector<const CXXRecordDecl *> Decls{Set.begin(), Set.end()};
+
+  // If we are in an itanium situation, the mangling-numbers for a lambda depend
+  // on the mangled signature, so sort by that. Only TargetCXXABI::Microsoft
+  // doesn't use the itanium mangler, and just sets the lambda mangling number
+  // incrementally, with no consideration to the signature.
+  if (Target->getCXXABI().getKind() != TargetCXXABI::Microsoft)
+    FilterSYCLKernelNamingDecls(const_cast<ASTContext &>(*this), RD, Decls);
+
   llvm::sort(Decls, [](const CXXRecordDecl *LHS, const CXXRecordDecl *RHS) {
     return LHS->getLambdaManglingNumber() < RHS->getLambdaManglingNumber();
   });
