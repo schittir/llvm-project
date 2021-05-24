@@ -77,7 +77,7 @@ int main() {
   // CHECK: call spir_func void @puts(i8* getelementptr inbounds ([[LAMBDA_K3_SIZE]], [[LAMBDA_K3_SIZE]]* @[[LAMBDA_KERNEL3]]
 
   constexpr const char str[] = "lalala";
-  static_assert(__builtin_strcmp(__builtin_unique_stable_name(str), "_ZTSA7_Kc\00") == 0, "unexpected mangling");
+  static_assert(__builtin_strcmp(__builtin_unique_stable_name(str), "_ZTSA7_Kc\0") == 0, "unexpected mangling");
 
   int i = 0;
   puts(__builtin_unique_stable_name(i++));
