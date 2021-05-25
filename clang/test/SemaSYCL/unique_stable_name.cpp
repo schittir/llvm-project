@@ -6,47 +6,47 @@ template <typename KernelName, typename KernelType>
   kernelFunc();
 }
 
-// kernel3 - expect error
+// kernel1 - expect error
 // The current function is named with a lambda (i.e., takes a lambda as a
 // template parameter. Call the builtin on the current function then it is
 // passed to a kernel. Test that passing the given function to the unique
 // stable name builtin and then to the kernel throws an error because the
 // latter causes its name mangling to change.
 template <typename Func>
-void kernel3func(const Func &F3) {
-  constexpr const char *F3_output = __builtin_unique_stable_name(F3); // #USN_F3
+void kernel1func(const Func &F1) {
+  constexpr const char *F1_output = __builtin_unique_stable_name(F1); // #USN_F1
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#kernel3func_call{{in instantiation of function template specialization}}
-  // expected-note@#USN_F3{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#kernel1func_call{{in instantiation of function template specialization}}
+  // expected-note@#USN_F1{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel3>(F3); // #kernel3_call
+  kernel_single_task<class kernel1>(F1); // #kernel1_call
 }
 
-void callkernel3() {
-  kernel3func([]() {}); // #kernel3func_call
+void callkernel1() {
+  kernel1func([]() {}); // #kernel1func_call
 }
 
-// kernel4 - expect error
+// kernel2 - expect error
 // The current function is named with a lambda (i.e., takes a lambda as a
 // template parameter). Call the builtin on the given function,
 // then an empty lambda is passed to kernel.
 // Test that passing the given function to the unique stable name builtin and
 // then passing a different lambda to the kernel still throws an error because
 // the calling context is part of naming the kernel. Even though the given
-// function (F4) is not passed to the kernel, its mangling changes due to
+// function (F2) is not passed to the kernel, its mangling changes due to
 // kernel call with the unrelated lambda.
 template <typename Func>
-void kernel4func(const Func &F4) {
-  constexpr const char *F4_output = __builtin_unique_stable_name(F4); // #USN_F4
+void kernel2func(const Func &F2) {
+  constexpr const char *F2_output = __builtin_unique_stable_name(F2); // #USN_F2
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#kernel4func_call{{in instantiation of function template specialization}}
-  // expected-note@#USN_F4{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#kernel2func_call{{in instantiation of function template specialization}}
+  // expected-note@#USN_F2{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel4>([]() {});
+  kernel_single_task<class kernel2>([]() {});
 }
 
-void callkernel4() {
-  kernel4func([]() {}); // #kernel4func_call
+void callkernel2() {
+  kernel2func([]() {}); // #kernel2func_call
 }
 
 template <template <typename> typename Outer, typename Inner>
@@ -58,49 +58,49 @@ template <typename Ty>
 struct Tangerine {};
 
 template <typename Func>
-void kernel13_14func(const Func &F) {
+void kernel3_4func(const Func &F) {
   // Test that passing the same lambda to two kernels does not cause an error
   // because the kernel uses do not interfere with each other or invalidate
   // the stable name in any way.
-  kernel_single_task<class kernel13>(F);
-  kernel_single_task<class kernel14>(F);
+  kernel_single_task<class kernel3>(F);
+  kernel_single_task<class kernel4>(F);
   // Using the same functor twice should be fine
 }
 
-// kernel13 and kernel14 - expect no errors
-void callkernel13_14() {
-  kernel13_14func([]() {});
+// kernel3 and kernel4 - expect no errors
+void callkernel3_4() {
+  kernel3_4func([]() {});
 }
 
 template <typename T>
 static constexpr const char *output1 = __builtin_unique_stable_name(T);
 
-#define MACRO12()                \
-  auto l12 = []() { return 1; }; \
-  constexpr const char *l1_output = __builtin_unique_stable_name(l12);
+#define MACRO()                  \
+  auto l14 = []() { return 1; }; \
+  constexpr const char *l14_output = __builtin_unique_stable_name(l14);
 
 int main() {
 
-  // kernel1 - expect no error
+  // kernel5 - expect no error
   // Test that passing the lambda to the unique stable name builtin and then
   // using the lambda in a way that does not  contribute to the kernel name
   // does not cause an error because the  stable name is not invalidated in
   // this situation.
-  auto l1 = []() {};
-  constexpr const char *l1_output = __builtin_unique_stable_name(l1);
-  kernel_single_task<class kernel1>(
-      [=]() { l1(); }); // Used in the kernel, but not the kernel name itself
+  auto l5 = []() {};
+  constexpr const char *l5_output = __builtin_unique_stable_name(l5);
+  kernel_single_task<class kernel5>(
+      [=]() { l5(); }); // Used in the kernel, but not the kernel name itself
 
-  // kernel2 - expect error
+  // kernel6 - expect error
   // Test that passing the lambda to the unique stable name builtin and then
   // using the same lambda in the naming of a kernel causes a diagnostic on the
   // kernel use due to the change in results to the stable name.
-  auto l2 = []() { return 1; };
-  constexpr const char *l2_output = __builtin_unique_stable_name(l2); // #USN_L2
+  auto l6 = []() { return 1; };
+  constexpr const char *l6_output = __builtin_unique_stable_name(l6); // #USN_l6
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#USN_L2{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_l6{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel2>(l2); // Used in the kernel name after builtin
+  kernel_single_task<class kernel6>(l6); // Used in the kernel name after builtin
 
   // kernel7 - expect error
   // Test that passing a lambda to the unique stable name builtin and then
@@ -135,7 +135,7 @@ int main() {
     kernel_single_task<class kernel9>(l10);
   }
 
-  // kernel6 - expect no error
+  // kernel11 - expect no error
   // Make a lambda
   // Make another lambda that captures the first one
   // Call the builtin on the first lambda (in a constexpr context)
@@ -144,33 +144,33 @@ int main() {
   // passing a second lambda capturing the first one to the kernel does not
   // throw an error because the first lambda is not involved in naming the
   // kernel i.e., the mangling does not change
-  auto l5 = []() { return 1; };
-  auto l6 = [l5]() { return 2; };
-  constexpr const char *l5_output = __builtin_unique_stable_name(l5);
-  kernel_single_task<class kernel6>(l6); // #kernel6call
+  auto l11 = []() { return 1; };
+  auto l12 = [l11]() { return 2; };
+  constexpr const char *l11_output = __builtin_unique_stable_name(l11);
+  kernel_single_task<class kernel11>(l12); // #kernel6call
 
-  // kernel11 - expect an error
+  // kernel12 - expect an error
   // Test that passing a lambda to the unique stable name builtin and then
   // passing it to the kernel as a template template parameter causes a
   // diagnostic on the kernel use due to template template parameter being
   // involved in the mangling of the kernel name.
-  auto l11 = []() { return 1; };
-  constexpr const char *l11_output = __builtin_unique_stable_name(l11); // #USN_l11
+  auto l13 = []() { return 1; };
+  constexpr const char *l13_output = __builtin_unique_stable_name(l13); // #USN_l13
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#USN_l11{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_l13{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel11>(S<Tangerine, decltype(l11)>{});
+  kernel_single_task<class kernel12>(S<Tangerine, decltype(l13)>{});
 
-  // kernel12 - expect an error
+  // kernel13 - expect an error
   // Test that passing a lambda to the unique stable name builtin within a macro
   // and then calling the macro within the kernel causes an error on the kernel
   // and diagnoses in all the expected places despite the use of a macro.
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#USN_MACRO12{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_MACRO{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel12>(
+  kernel_single_task<class kernel13>(
       []() {
-        MACRO12(); // #USN_MACRO12
+        MACRO(); // #USN_MACRO
       });
 }
 
