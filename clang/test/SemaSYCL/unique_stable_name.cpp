@@ -1,5 +1,5 @@
-// RUN: %clang_cc1 %s --std=c++17 -triple x86_64-pc-windows-msvc -fsycl-is-device -verify -fsyntax-only
-// RUN: %clang_cc1 %s --std=c++17 -triple x86_64-linux-gnu -fsycl-is-device -verify -fsyntax-only
+// RUN: %clang_cc1 %s --std=c++17 -triple x86_64-pc-windows-msvc -fsycl-is-device -verify -fsyntax-only -Wno-unused
+// RUN: %clang_cc1 %s --std=c++17 -triple x86_64-linux-gnu -fsycl-is-device -verify -fsyntax-only -Wno-unused
 
 template <typename KernelName, typename KernelType>
 [[clang::sycl_kernel]] void kernel_single_task(KernelType kernelFunc) { // #kernelSingleTask
@@ -101,7 +101,6 @@ int main() {
   // to the change in results to the stable name.
   auto l2 = []() { return 1; };
   constexpr const char *l2_output = __builtin_unique_stable_name(l2); // #USN_L2
-  // The two diagnostics below are emitted at #USN_F3 and the stack stops there
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
   // expected-note@#USN_L2{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@+1{{in instantiation of function template specialization}}
@@ -117,7 +116,7 @@ int main() {
   auto l8 = [](decltype(l7) *derp = nullptr) { return 2; };
   constexpr const char *l7_output = __builtin_unique_stable_name(l7); // #USN_l7
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
-  // expected-note@#USN_L7{{'__builtin_unique_stable_name' evaluated here}}
+  // expected-note@#USN_l7{{'__builtin_unique_stable_name' evaluated here}}
   // expected-note@#kernel7call{{in instantiation of function template specialization}}
   kernel_single_task<class kernel7>(l8); // #kernel7call
 
@@ -174,8 +173,8 @@ int main() {
   // Test that passing a lambda to the unique stable name builtin within a macro
   // and then calling the macro within the kernel causes an error on the kernel
   // due to the change in the results of the stable name
+  // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
   // expected-note@#USN_MACRO12{{'__builtin_unique_stable_name' evaluated here}}
-  // expected-note@#USN_l12{{expanded from macro 'MACRO12'}}
   // expected-note@+1{{in instantiation of function template specialization}}
   kernel_single_task<class kernel12>(
       []() {
