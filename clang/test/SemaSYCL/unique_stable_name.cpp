@@ -103,10 +103,11 @@ int main() {
   kernel_single_task<class kernel6>(l6); // Used in the kernel name after builtin
 
   // kernel7 - expect error
+  // Same as kernel11 (below) except make the lambda part of naming the kernel.
   // Test that passing a lambda to the unique stable name builtin and then
   // passing a second lambda to the kernel throws an error because the first
-  // lambda is included in the signature of the second lambda, hence attempting
-  // to change the mangling of the kernel
+  // lambda is included in the signature of the second lambda, hence it changes
+  // the mangling of the kernel.
   auto l7 = []() { return 1; };
   auto l8 = [](decltype(l7) *derp = nullptr) { return 2; };
   constexpr const char *l7_output = __builtin_unique_stable_name(l7); // #USN_l7
@@ -136,18 +137,14 @@ int main() {
   }
 
   // kernel11 - expect no error
-  // Make a lambda
-  // Make another lambda that captures the first one
-  // Call the builtin on the first lambda (in a constexpr context)
-  // Pass the second lambda to a kernel
   // Test that passing a lambda to the unique stable name builtin and then
   // passing a second lambda capturing the first one to the kernel does not
   // throw an error because the first lambda is not involved in naming the
-  // kernel i.e., the mangling does not change
+  // kernel i.e., the mangling does not change.
   auto l11 = []() { return 1; };
   auto l12 = [l11]() { return 2; };
   constexpr const char *l11_output = __builtin_unique_stable_name(l11);
-  kernel_single_task<class kernel11>(l12); // #kernel6call
+  kernel_single_task<class kernel11>(l12);
 
   // kernel12 - expect an error
   // Test that passing a lambda to the unique stable name builtin and then
