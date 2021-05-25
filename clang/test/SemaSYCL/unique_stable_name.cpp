@@ -113,17 +113,16 @@ int main() {
   constexpr const char *l7_output = __builtin_unique_stable_name(l7); // #USN_l7
   // expected-error@#kernelSingleTask{{kernel instantiation changes the result of an evaluated '__builtin_unique_stable_name'}}
   // expected-note@#USN_l7{{'__builtin_unique_stable_name' evaluated here}}
-  // expected-note@#kernel7call{{in instantiation of function template specialization}}
-  kernel_single_task<class kernel7>(l8); // #kernel7call
+  // expected-note@+1{{in instantiation of function template specialization}}
+  kernel_single_task<class kernel7>(l8);
 
   // kernel8 and kernel9 - expect error
-  // Make two lambdas
-  // Call the builtin on the second of the two lambdas (in a constexpr context)
-  // Within a constexpr if, pass the first lambda to a kernel in the true branch,
-  // pass the second lambda to a kernel in the false branch
-  // Test that passing a lambda to the unique stable name builtin and passing it
+  // Tests that passing a lambda to the unique stable name builtin and passing it
   // to a kernel called with an if constexpr branch causes a diagnostic on the
-  // kernel9 use due to the change in the results to the stable name
+  // kernel9 use due to the change in the results to the stable name. This happens
+  // even though the use of kernel9 happens in the false branch of a constexpr if
+  // because both the true and the false branches cause the instantiation of
+  // kernel_single_task.
   auto l9 = []() { return 1; };
   auto l10 = []() { return 2; };
   constexpr const char *l10_output = __builtin_unique_stable_name(l10); // #USN_l10
